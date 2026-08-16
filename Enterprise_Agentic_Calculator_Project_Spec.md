@@ -531,12 +531,7 @@ class DiagnosisResult(BaseModel):
     evidence: list[str]
     probable_cause: str
     confidence: float = Field(ge=0, le=1)
-    recommended_action: Literal[
-        "none",
-        "retry",
-        "restart_calculator",
-        "escalate"
-    ]
+    recommended_action: Literal["none", "retry", "restart_calculator", "escalate"]
 ```
 
 ## 11.6 Approval record
@@ -760,12 +755,7 @@ Output:
 ```python
 class SupervisorDecision(BaseModel):
     next_step: Literal[
-        "calculator",
-        "diagnosis",
-        "await_approval",
-        "remediation",
-        "complete",
-        "escalate"
+        "calculator", "diagnosis", "await_approval", "remediation", "complete", "escalate"
     ]
     reason: str
 ```
@@ -984,8 +974,7 @@ Example:
 
 ```python
 class RemediationPolicy:
-    def evaluate(self, ctx: RemediationContext) -> PolicyDecision:
-        ...
+    def evaluate(self, ctx: RemediationContext) -> PolicyDecision: ...
 ```
 
 Policy rules:

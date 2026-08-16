@@ -173,6 +173,7 @@ Calculator-down must return a typed failure, not a hallucinated answer.
       message: str
       conversation_id: UUID | None = None
 
+
   class AgentResponse(BaseModel):
       answer: str
       tool_called: bool
@@ -377,7 +378,9 @@ planner-executor diagnostic flow using Microsoft Agent Framework.
 - [ ] 7.4 — Add `SupervisorDecision` contract:
   ```python
   class SupervisorDecision(BaseModel):
-      next_step: Literal["calculator", "diagnosis", "await_approval", "remediation", "complete", "escalate"]
+      next_step: Literal[
+          "calculator", "diagnosis", "await_approval", "remediation", "complete", "escalate"
+      ]
       reason: str
   ```
 - [ ] 7.5 — Add `DiagnosisResult` contract:

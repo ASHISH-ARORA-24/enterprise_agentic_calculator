@@ -13,13 +13,13 @@
 #
 # .PHONY tells make these are command names, not file names.
 # Without this, make would get confused if a file named "test" existed.
-.PHONY: setup test test-cov check lint format typecheck up down fault-on fault-off help
+.PHONY: setup test test-cov check lint format typecheck up down fault-on fault-off help calculator-run calculator-stop
 
 # ---------------------------------------------------------------------------
 # Setup — install all workspace dependencies into .venv
 # ---------------------------------------------------------------------------
 setup:
-	uv sync
+	uv sync --all-packages
 
 # ---------------------------------------------------------------------------
 # Test — run all tests across all services
@@ -60,6 +60,49 @@ format:
 # ---------------------------------------------------------------------------
 typecheck:
 	uv run pyright
+
+# ---------------------------------------------------------------------------
+# calculator-run  — start the calculator service in the background.
+# calculator-stop — stop it using the saved PID file.
+#
+# A PID file (.calculator.pid) stores the process ID so calculator-stop
+# knows exactly which process to kill.
+# ---------------------------------------------------------------------------
+calculator-run:
+	@if lsof -i :8000 -t > /dev/null 2>&1; then \
+		echo "Port 8000 is already in use — calculator may already be running."; \
+		echo "  Swagger: http://localhost:8000/docs"; \
+		echo "  Run 'make calculator-stop' to stop it first."; \
+	else \
+		cd apps/calculator_service && \
+		uv run uvicorn app.main:app --port 8000 --host 0.0.0.0 --log-level warning & \
+		echo $$! > ../../.calculator.pid; \
+		sleep 2; \
+		echo ""; \
+		echo "  Calculator Service is running."; \
+		echo ""; \
+		echo "  API:     http://localhost:8000"; \
+		echo "  Swagger: http://localhost:8000/docs"; \
+		echo "  ReDoc:   http://localhost:8000/redoc"; \
+		echo ""; \
+		echo "  Run 'make calculator-stop' to stop it."; \
+		echo ""; \
+	fi
+
+calculator-stop:
+	@if [ -f .calculator.pid ]; then \
+		kill $$(cat .calculator.pid) 2>/dev/null || true; \
+		rm -f .calculator.pid; \
+		echo "Calculator Service stopped."; \
+	else \
+		PIDS=$$(lsof -i :8000 -t 2>/dev/null); \
+		if [ -n "$$PIDS" ]; then \
+			kill $$PIDS 2>/dev/null || true; \
+			echo "Calculator Service stopped."; \
+		else \
+			echo "Calculator Service is not running."; \
+		fi \
+	fi
 
 # ---------------------------------------------------------------------------
 # Docker Compose — start and stop all services locally
@@ -104,6 +147,10 @@ help:
 	@echo "  make test                    Run all tests across all services"
 	@echo "  make test-cov                Run tests and show coverage report"
 	@echo "  make check                   Run test-cov + lint + typecheck in sequence (use before committing)"
+	@echo ""
+	@echo "LOCAL SERVICES (no Docker needed)"
+	@echo "  make calculator-run          Start calculator in background + print Swagger URL"
+	@echo "  make calculator-stop         Stop the running calculator"
 	@echo ""
 	@echo "LOCAL SERVICES (requires Docker)"
 	@echo "  make up                      Build and start all services"

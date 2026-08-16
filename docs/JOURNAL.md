@@ -37,3 +37,38 @@ Ruff, Pyright, pytest, Makefile, CI, .gitignore, .env vs .env.example
 Iteration 1 — Calculator Service (local)
 
 ---
+
+## 2026-08-16 — Iteration 1 complete
+
+### What we built
+- Full folder structure for `apps/calculator_service/` (api, domain, models, observability)
+- `settings.py` — all config read from environment variables via pydantic-settings
+- `app/domain/errors.py` — typed error codes and domain exceptions (DivideByZeroError)
+- `app/domain/calculator.py` — pure Python arithmetic using Decimal (add, subtract, multiply, divide)
+- `app/models/schemas.py` — Pydantic models (CalculationRequest, CalculationResponse, ErrorResponse, HealthResponse, VersionResponse)
+- `app/api/routes.py` — all HTTP endpoints (POST /api/v1/calculate, GET /health/live, GET /health/ready, GET /api/v1/version)
+- `app/main.py` — FastAPI app entry point
+- `apps/calculator_service/conftest.py` — pytest path fix for monorepo
+- `apps/calculator_service/Dockerfile` — multi-stage build, non-root user, health check
+- `tests/test_domain.py` — 20 unit tests for arithmetic logic
+- `tests/test_api.py` — 15 API tests covering all endpoints, validation, fault modes
+- `make calculator-run` / `make calculator-stop` — start/stop service locally
+
+### Acceptance criteria — all met
+- All four operations work correctly
+- Decimal precision correct (0.1 + 0.2 = 0.3)
+- Divide by zero returns typed DIVIDE_BY_ZERO error
+- Invalid input returns 422 automatically via Pydantic
+- Fault injection modes work (unhealthy, calculate_500)
+- Docker image builds and runs (224MB)
+- 39 tests pass, 99% coverage, 0 lint errors, 0 type errors
+
+### Concepts learned
+See `docs/NOTES.md` — FastAPI, Pydantic, Decimal, HTTP status codes, health
+endpoints, fault injection, Uvicorn, Docker, multi-stage builds, non-root user,
+conftest.py, PID files
+
+### Next
+Iteration 2 — Simple Agent calls Calculator
+
+---
