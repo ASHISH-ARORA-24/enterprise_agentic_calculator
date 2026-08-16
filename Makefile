@@ -13,7 +13,7 @@
 #
 # .PHONY tells make these are command names, not file names.
 # Without this, make would get confused if a file named "test" existed.
-.PHONY: setup test test-cov check lint format typecheck up down fault-on fault-off help calculator-run calculator-stop
+.PHONY: setup test test-cov check lint format typecheck up down fault-on fault-off help calculator-run calculator-stop agent-run agent-stop
 
 # ---------------------------------------------------------------------------
 # Setup — install all workspace dependencies into .venv
@@ -87,6 +87,41 @@ calculator-run:
 		echo ""; \
 		echo "  Run 'make calculator-stop' to stop it."; \
 		echo ""; \
+	fi
+
+agent-run:
+	@if lsof -i :8001 -t > /dev/null 2>&1; then \
+		echo "Port 8001 is already in use — agent may already be running."; \
+		echo "  Swagger: http://localhost:8001/docs"; \
+		echo "  Run 'make agent-stop' to stop it first."; \
+	else \
+		cd apps/agent_api && \
+		uv run uvicorn agent_api.main:app --port 8001 --host 0.0.0.0 --log-level warning & \
+		echo $$! > ../../.agent.pid; \
+		sleep 2; \
+		echo ""; \
+		echo "  Agent API is running."; \
+		echo ""; \
+		echo "  API:     http://localhost:8001"; \
+		echo "  Swagger: http://localhost:8001/docs"; \
+		echo ""; \
+		echo "  Run 'make agent-stop' to stop it."; \
+		echo ""; \
+	fi
+
+agent-stop:
+	@if [ -f .agent.pid ]; then \
+		kill $$(cat .agent.pid) 2>/dev/null || true; \
+		rm -f .agent.pid; \
+		echo "Agent API stopped."; \
+	else \
+		PIDS=$$(lsof -i :8001 -t 2>/dev/null); \
+		if [ -n "$$PIDS" ]; then \
+			kill $$PIDS 2>/dev/null || true; \
+			echo "Agent API stopped."; \
+		else \
+			echo "Agent API is not running."; \
+		fi \
 	fi
 
 calculator-stop:

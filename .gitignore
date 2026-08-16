@@ -67,5 +67,6 @@ Thumbs.db
 # Logs
 *.log
 
-# Runtime PID files — created by make calculator-run
+# Runtime PID files — created by make calculator-run / agent-run
 .calculator.pid
+.agent.pid

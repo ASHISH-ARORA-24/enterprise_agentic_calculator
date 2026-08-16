@@ -86,4 +86,5 @@ testpaths = [
 asyncio_mode = "auto"
 # importlib mode handles monorepos where multiple services have test files
 # with the same name (e.g. test_placeholder.py in each service).
-addopts = "--import-mode=importlib"
+# -v shows each test name as it runs.
+addopts = "--import-mode=importlib -v"

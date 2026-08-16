@@ -15,12 +15,10 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        # Read from a .env file if present. Useful for local development.
-        # In production (Docker / Azure), real environment variables take precedence.
-        env_file=".env",
+        env_file=[".env", "../../.env"],
         env_file_encoding="utf-8",
-        # Ignore extra variables in .env that do not match any field here.
         extra="ignore",
+        env_ignore_empty=True,
     )
 
     # ------------------------------------------------------------------
