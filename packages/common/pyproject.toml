@@ -1,0 +1,16 @@
+# Common — shared utilities used by more than one service.
+# Anything that is not domain-specific and is needed in multiple places lives here.
+# Examples: error codes, logging helpers, correlation ID generation, retry decorators.
+
+[project]
+name = "eac-common"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["common"]

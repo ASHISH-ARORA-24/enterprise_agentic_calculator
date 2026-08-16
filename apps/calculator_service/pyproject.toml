@@ -1,0 +1,17 @@
+# Calculator Service — FastAPI microservice that exposes arithmetic operations.
+# Runtime dependencies (fastapi, uvicorn, etc.) are added in Iteration 1.
+# Dev tooling (ruff, pyright, pytest) comes from the workspace root.
+
+[project]
+name = "calculator-service"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# Tell hatchling the Python package to ship lives in the "app" directory.
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

@@ -1,0 +1,68 @@
+# CI pipeline — runs on every pull request and every push to main.
+#
+# What it does:
+#   1. Checks out the code
+#   2. Installs uv (our Python package manager)
+#   3. Installs all dependencies
+#   4. Runs lint  — catches errors and bad patterns
+#   5. Runs format check — ensures consistent code style
+#   6. Runs type check — verifies type hints are correct
+#   7. Runs tests — verifies behaviour is correct
+#
+# Later iterations will add:
+#   - Docker image build (Iteration 3)
+#   - Dependency security scan (Iteration 13)
+#   - Azure deployment (Iteration 13)
+
+name: CI
+
+# When to run this pipeline
+on:
+  pull_request:          # run on every pull request
+  push:
+    branches:
+      - main             # run on every push to main
+
+jobs:
+  ci:
+    name: Lint, Typecheck, Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1 — get the code onto the CI machine
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2 — install uv (the Python package manager we use)
+      # astral-sh/setup-uv is the official GitHub Action for uv
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      # Step 3 — install Python (uv manages the version for us)
+      - name: Set up Python
+        run: uv python install
+
+      # Step 4 — install all workspace dependencies into .venv
+      - name: Install dependencies
+        run: uv sync
+
+      # Step 5 — lint: check for errors, unused imports, bad naming
+      # --output-format=github makes errors show up inline on the PR
+      - name: Lint (ruff check)
+        run: uv run ruff check . --output-format=github
+
+      # Step 6 — format check: ensure code style is consistent
+      # --check means "report problems but do not fix them"
+      # If formatting is wrong, the developer must run "make format" locally
+      - name: Format check (ruff format)
+        run: uv run ruff format . --check
+
+      # Step 7 — type check: verify type hints are correct
+      - name: Type check (pyright)
+        run: uv run pyright
+
+      # Step 8 — run all tests
+      - name: Test (pytest)
+        run: uv run pytest

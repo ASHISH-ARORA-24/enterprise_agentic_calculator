@@ -1,0 +1,17 @@
+# Telemetry — shared OpenTelemetry setup and helpers.
+# All services import from here so tracing, metrics, and correlation ID
+# propagation are configured consistently across the platform.
+# Dependencies (opentelemetry-sdk, etc.) are added in Iteration 12.
+
+[project]
+name = "eac-telemetry"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["telemetry"]

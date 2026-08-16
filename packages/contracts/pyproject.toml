@@ -1,0 +1,18 @@
+# Contracts — shared Pydantic models used by all services.
+# Keeping models here means every service imports the same definition.
+# No drift, no duplication across services.
+# Examples: CalculationRequest, WorkflowStatus, DiagnosisResult, ApprovalDecision.
+# Dependencies (pydantic) are added in Iteration 1.
+
+[project]
+name = "eac-contracts"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["contracts"]

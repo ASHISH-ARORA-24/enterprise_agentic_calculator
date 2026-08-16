@@ -1,0 +1,89 @@
+# Root workspace configuration for the Enterprise Agentic Calculator monorepo.
+#
+# This file has two jobs:
+#   1. Declare the uv workspace — all services and shared packages in one place.
+#   2. Configure shared dev tooling — Ruff, Pyright, pytest — so every service
+#      uses identical settings without duplicating config.
+#
+# Individual services declare their own runtime dependencies in their own
+# pyproject.toml files. Dev tools live here so every member uses the same versions.
+
+[project]
+name = "enterprise-agentic-calculator"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+# ---------------------------------------------------------------------------
+# uv workspace
+# Each path listed here must contain its own pyproject.toml.
+# Run "uv sync" once at the repo root — all members get their dependencies.
+# ---------------------------------------------------------------------------
+[tool.uv.workspace]
+members = [
+    "apps/calculator_service",
+    "apps/agent_api",
+    "apps/mcp_server",
+    "packages/contracts",
+    "packages/telemetry",
+    "packages/common",
+]
+
+# ---------------------------------------------------------------------------
+# Dev dependencies — only used during development, never shipped in Docker images.
+# ---------------------------------------------------------------------------
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "pyright>=1.1.390",
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff — linter + formatter in one tool (replaces flake8, isort, black)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+# E/W = pycodestyle (style errors and warnings)
+# F   = pyflakes (unused imports, undefined names)
+# I   = isort (import ordering)
+# N   = pep8-naming conventions
+# UP  = pyupgrade (use modern Python syntax automatically)
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test files can have long lines in parametrize decorators — not worth fixing.
+"tests/**/*.py" = ["E501"]
+
+# ---------------------------------------------------------------------------
+# Pyright — static type checker
+# Reads type hints like "def add(a: int, b: int) -> int:" and verifies them.
+# ---------------------------------------------------------------------------
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+# Tell Pyright where uv creates the virtual environment.
+venvPath = "."
+venv = ".venv"
+include = ["apps", "packages"]
+
+# ---------------------------------------------------------------------------
+# pytest — test runner
+# Explicit paths keep discovery fast — pytest does not search the whole repo.
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = [
+    "apps/calculator_service/tests",
+    "apps/agent_api/tests",
+    "apps/mcp_server/tests",
+    "packages/contracts/tests",
+]
+# asyncio_mode = "auto" means async test functions work without extra decorators.
+asyncio_mode = "auto"
+# importlib mode handles monorepos where multiple services have test files
+# with the same name (e.g. test_placeholder.py in each service).
+addopts = "--import-mode=importlib"
