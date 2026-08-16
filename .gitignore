@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments — never commit the venv folder
+.venv/
+venv/
+env/
+
+# uv
+.uv/
+
+# Secrets — never commit these
+.env
+.env.local
+.env.*.local
+
+# Test and coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Type checker caches
+.pyright/
+.mypy_cache/
+
+# Linter cache
+.ruff_cache/
+
+# Terraform — state files contain sensitive infrastructure details
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+
+# Terraform lock file IS committed (it pins provider versions)
+# .terraform.lock.hcl  <-- do NOT ignore this
+
+# Docker
+*.tar
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Windows download metadata (added automatically when downloading files)
+*.Identifier
+*Zone.Identifier
+
+# Logs
+*.log
