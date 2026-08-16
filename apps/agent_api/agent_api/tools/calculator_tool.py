@@ -1,53 +1,49 @@
 import uuid
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 import httpx
-
-# Import the shared ToolResult contract from the contracts package.
-# Every tool returns this same shape — the agent always knows what to expect.
-from contracts.tools import ToolResult
+from langchain_core.tools import tool
 
 from agent_api.settings import settings
 
 # ---------------------------------------------------------------------------
-# Timeout and retry constants.
-#
-# These MUST be code-level constants, not prompt instructions.
-# The spec is explicit: every network call must have a timeout and every
-# retry loop must have a hard cap enforced in code.
+# Timeout and retry constants — enforced in code, not prompts.
 # ---------------------------------------------------------------------------
 
 TIMEOUT_SECONDS = settings.calculator_timeout_seconds  # 3.0s
 MAX_RETRIES = settings.calculator_max_retries  # 1
 
 
-async def calculate(
-    operation: str,
-    a: Decimal,
-    b: Decimal,
-    correlation_id: str = "",
-) -> ToolResult:
+@tool
+async def calculate(operation: str, a: float, b: float) -> str:
     """
-    Call the Calculator Service and return a typed ToolResult.
+    Perform an arithmetic calculation by calling the Calculator Service.
 
-    This is the ONLY place in the codebase that knows how to talk to the
-    calculator HTTP API. The agent calls this function — it never makes
-    HTTP calls itself.
+    Use this tool for ALL arithmetic questions — add, subtract, multiply, divide.
+    Never calculate mentally. Always call this tool.
 
-    On success: ToolResult(success=True, data={"result": "200"}, ...)
-    On failure: ToolResult(success=False, code="SERVICE_UNAVAILABLE", ...)
+    Args:
+        operation: One of "add", "subtract", "multiply", "divide"
+        a: First number
+        b: Second number
+
+    Returns:
+        The result as a string, or an error description if the calculation failed.
     """
+    # The @tool decorator reads this docstring and type hints to generate
+    # the JSON schema that the LLM uses to decide how to call this tool.
 
-    if not correlation_id:
-        correlation_id = str(uuid.uuid4())
+    correlation_id = str(uuid.uuid4())
 
-    payload = {
-        "operation": operation,
-        "a": str(a),
-        "b": str(b),
-    }
+    # Convert floats to Decimal strings for exact arithmetic in the service.
+    try:
+        a_decimal = str(Decimal(str(a)))
+        b_decimal = str(Decimal(str(b)))
+    except InvalidOperation:
+        return "ERROR:INVALID_INPUT — cannot parse operands as numbers"
 
-    # Retry loop — bounded by MAX_RETRIES constant, never infinite.
+    payload = {"operation": operation, "a": a_decimal, "b": b_decimal}
+
     last_error: Exception | None = None
 
     for attempt in range(MAX_RETRIES + 1):
@@ -58,48 +54,28 @@ async def calculate(
                     json=payload,
                 )
 
-            # HTTP 200 — calculation succeeded
             if response.status_code == 200:
                 data = response.json()
-                return ToolResult(
-                    success=True,
-                    code="OK",
-                    message="Calculation successful",
-                    data={"result": data["result"], "request_id": data["request_id"]},
-                    retryable=False,
-                    correlation_id=correlation_id,
-                )
+                # Return the result as a plain string — LangChain tool results
+                # are strings that the LLM reads to form the final answer.
+                return f"SUCCESS:{data['result']} (correlation_id={correlation_id})"
 
-            # HTTP 422 — domain error (e.g. divide by zero).
-            # This is a permanent failure — do not retry.
             if response.status_code == 422:
                 detail = response.json().get("detail", {})
-                return ToolResult(
-                    success=False,
-                    code=detail.get("code", "INVALID_REQUEST"),
-                    message=detail.get("message", "Invalid calculation request"),
-                    retryable=False,
-                    correlation_id=correlation_id,
-                )
+                code = detail.get("code", "INVALID_REQUEST")
+                msg = detail.get("message", "Invalid request")
+                # Not retryable — divide by zero, invalid operation.
+                return f"ERROR:{code} — {msg}"
 
-            # Any other HTTP error — treat as transient, allow retry.
-            return ToolResult(
-                success=False,
-                code="SERVICE_UNAVAILABLE",
-                message=f"Calculator returned unexpected status {response.status_code}",
-                retryable=True,
-                correlation_id=correlation_id,
-            )
+            return f"ERROR:SERVICE_UNAVAILABLE — unexpected status {response.status_code}"
 
         except httpx.TimeoutException:
             last_error = Exception("timeout")
-            # Timeout is transient — retry if attempts remain.
             if attempt < MAX_RETRIES:
                 continue
 
         except httpx.ConnectError:
-            last_error = Exception("connection error")
-            # Connection refused — calculator is down. Retry once.
+            last_error = Exception("connection refused")
             if attempt < MAX_RETRIES:
                 continue
 
@@ -107,14 +83,6 @@ async def calculate(
             last_error = exc
             break
 
-    # All attempts exhausted — return a typed failure.
     error_msg = str(last_error) if last_error else "unknown error"
-    is_timeout = "timeout" in error_msg
-
-    return ToolResult(
-        success=False,
-        code="TOOL_TIMEOUT" if is_timeout else "SERVICE_UNAVAILABLE",
-        message=f"Calculator service is unreachable: {error_msg}",
-        retryable=True,
-        correlation_id=correlation_id,
-    )
+    code = "TOOL_TIMEOUT" if "timeout" in error_msg else "SERVICE_UNAVAILABLE"
+    return f"ERROR:{code} — calculator service is unreachable: {error_msg}"
